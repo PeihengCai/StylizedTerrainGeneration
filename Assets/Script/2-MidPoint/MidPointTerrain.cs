@@ -6,22 +6,17 @@ using UnityEngine.Rendering;
 [System.Serializable]
 public class MidTerrainSetting
 {
-    public int divisions;
-    public float xSize;
-    public float zSize;
-    public float maxHeight;
-    public float minHeight;
-    public float roughness = 2.0f;
-    public float heightDampenerPower = 2.0f;
-    //public Gradient gradient;
+    public int mDivisions;
+    public float mSize;
+    public float mHeight;
 }
 
 public class MidPointTerrain : MonoBehaviour
 {
     public MidTerrainSetting settings;
 
-    private Vector3[] mVerts;
-    private int mVertCount;
+    Vector3[] mVerts;
+    int mVertCount;
 
     private void Start()
     {
@@ -30,24 +25,18 @@ public class MidPointTerrain : MonoBehaviour
 
     void CreateMidTerrain()
     {
-        int divisions = settings.divisions;
-        float xSize = settings.xSize;
-        float zSize = settings.zSize;
-        float maxHeight = settings.maxHeight;
-        float minHeight = settings.minHeight;
-        //Gradient gradient = settings.gradient;
-        float heightDampener = Mathf.Pow(settings.heightDampenerPower, -1 * settings.roughness);
+        int mDivisions = settings.mDivisions;
+        float mSize = settings.mSize;
+        float mHeight = settings.mHeight;
 
         //vertex array
-        mVertCount = (divisions + 1) * (divisions + 1);
+        mVertCount = (mDivisions + 1) * (mDivisions + 1);
         mVerts = new Vector3[mVertCount];
-        int[] tris = new int[divisions * divisions * 2 * 3];
         Vector2[] uvs = new Vector2[mVertCount];
-        //Color[] colors = new Color[mVertCount];
-        float halfSize_x = xSize * 0.5f;
-        float halfSize_z = zSize * 0.5f;
-        float divisionSize_x = xSize / divisions;
-        float divisionSize_z = zSize / divisions;
+        int[] tris = new int[mDivisions * mDivisions * 2 * 3];
+
+        float halfSize = mSize * 0.5f;
+        float divisionSize = mSize / mDivisions;
 
         Mesh mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
@@ -55,22 +44,17 @@ public class MidPointTerrain : MonoBehaviour
         //build up triangles
         int triOffset = 0;
 
-        for (int i = 0; i <= divisions; i++)
+        for (int i = 0; i <= mDivisions; i++)
         {
-            for (int j = 0; j <= divisions; j++)
+            for (int j = 0; j <= mDivisions; j++)
             {
-                //int index = i * (divisions + 1) + j;
+                mVerts[i * (mDivisions + 1) + j] = new Vector3(-halfSize + j * divisionSize, 0.0f, halfSize - i * divisionSize);
+                uvs[i * (mDivisions + 1) + j] = new Vector2((float)i / mDivisions, (float)j / mDivisions);
 
-                mVerts[i * (divisions + 1) + j] = new Vector3(-halfSize_x + j * divisionSize_x, 0.0f, halfSize_z - i * divisionSize_z);
-
-                //mVerts[index].y = 0;
-                //float normalizedHeight = Mathf.InverseLerp(heightMin, heightMax, mVerts[index].y);
-                //colors[index] = gradient.Evaluate(normalizedHeight);
-                uvs[i * (divisions + 1) + j] = new Vector2((float)i / divisions, (float)j / divisions);
-                if (i < divisions && j < divisions)
+                if (i < mDivisions && j < mDivisions)
                 {
-                    int topleft = i * (divisions + 1) + j;
-                    int botleft = (i + 1) * (divisions + 1) + j;
+                    int topleft = i * (mDivisions + 1) + j;
+                    int botleft = (i + 1) * (mDivisions + 1) + j;
 
                     //first triangle
                     tris[triOffset] = topleft;
@@ -88,80 +72,64 @@ public class MidPointTerrain : MonoBehaviour
         }
 
         //set the 4 corners of the array to initial value
-        mVerts[0].y = Random.Range(minHeight, maxHeight);
-        mVerts[divisions].y = Random.Range(minHeight, maxHeight);
-        mVerts[mVerts.Length - 1].y = Random.Range(minHeight, maxHeight);
-        mVerts[mVerts.Length - 1 - divisions].y = Random.Range(minHeight, maxHeight);
+        mVerts[0].y = Random.Range(-mHeight, mHeight);
+        mVerts[mDivisions].y = Random.Range(-mHeight, mHeight);
+        mVerts[mVerts.Length - 1].y = Random.Range(-mHeight, mHeight);
+        mVerts[mVerts.Length - 1 - mDivisions].y = Random.Range(-mHeight, mHeight);
 
-        //Diamond-square
-        int iterations = (int)Mathf.Log(divisions, 2);
+        //iteration loop
+        int iterations = (int)Mathf.Log(mDivisions, 2);
         int numSquares = 1;
-        int squareSize = divisions;
+        int squareSize = mDivisions;
 
         for (int i = 0; i < iterations; i++)
         {
             int row = 0;
             for (int j = 0; j < numSquares; j++)
             {
-                int col = 0;
+                int column = 0;
                 for (int k = 0; k < numSquares; k++)
                 {
-                    //calling diamond square
-                    DiamondSquare(row, col, squareSize, minHeight, maxHeight);
+                    //call diamond square
+                    DiamondSquare(row, column, squareSize, mHeight);
 
-                    col += squareSize;
+                    column += squareSize;
 
                 }
                 row += squareSize;
             }
             numSquares *= 2;
             squareSize /= 2;
-            minHeight *= heightDampener;
-            maxHeight *= heightDampener;
+            mHeight *= 0.5f;//height go down speed
         }
-
-        /*
-        for (int i = 0; i < mVertCount; i++)
-        {
-            float normalizedHeight = Mathf.InverseLerp(settings.heightMin, settings.heightMax, mVerts[i].y);
-            colors[i] = gradient.Evaluate(normalizedHeight);
-        }
-        */
-
 
         //setup mesh
         mesh.vertices = mVerts;
         mesh.uv = uvs;
-        //mesh.colors = colors;
         mesh.triangles = tris;
+
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
-
-        
-        
     }
 
-    void DiamondSquare(int row, int col, int size, float minHeight, float maxHeight)
+    void DiamondSquare(int row, int column, int size, float offset)
     {
-
-        int halfSize = (int)(size * 0.5f);
-        int divisions = settings.divisions;
-
         //diamond step
         //set the midpoint of that square to be the average of the four corner points plus a random value.
-        int topleft = row * (divisions + 1) + col;
-        int botleft = (row + size) * (divisions + 1) + col;
-        int mid = (int)(row + halfSize) * (divisions + 1) + (int)(col + halfSize);
+        int halfSize = (int)(size * 0.5f);
+        int mDivisions = settings.mDivisions;
+        int topleft = row * (mDivisions + 1) + column;
+        int botleft = (row + size) * (mDivisions + 1) + column;
 
-        mVerts[mid].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[botleft].y + mVerts[botleft + size].y) * 0.25f + Random.Range(-minHeight, maxHeight);
+        int mid = (int)(row + halfSize) * (mDivisions + 1) + (int)(column + halfSize);
+        mVerts[mid].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[botleft].y + mVerts[botleft + size].y) * 0.25f + Random.Range(-offset, offset);
 
         //square step
         //For each diamond in the array, set the midpoint of that diamond to be the average of the four corner points plus a random value.
-        mVerts[topleft + halfSize].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[mid].y) / 3 + Random.Range(-minHeight, maxHeight);
-        mVerts[mid - halfSize].y = (mVerts[topleft].y + mVerts[botleft].y + mVerts[mid].y) / 3 + Random.Range(-minHeight, maxHeight);
-        mVerts[mid + halfSize].y = (mVerts[topleft + size].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-minHeight, maxHeight);
-        mVerts[botleft + halfSize].y = (mVerts[botleft].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-minHeight, maxHeight);
-
+        mVerts[topleft + halfSize].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
+        mVerts[mid - halfSize].y = (mVerts[topleft].y + mVerts[botleft].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
+        mVerts[mid + halfSize].y = (mVerts[topleft + size].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
+        mVerts[botleft + halfSize].y = (mVerts[botleft].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
     }
 
 

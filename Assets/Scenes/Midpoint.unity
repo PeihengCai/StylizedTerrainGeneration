@@ -251,7 +251,7 @@ GameObject:
   - component: {fileID: 1240730230}
   - component: {fileID: 1240730229}
   - component: {fileID: 1240730228}
-  - component: {fileID: 1240730227}
+  - component: {fileID: 1240730231}
   m_Layer: 0
   m_Name: MidPoint
   m_TagString: Untagged
@@ -259,26 +259,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1240730227
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1240730226}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06a82afbf2f76bd4690c531b74c016bf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  settings:
-    divisions: 64
-    xSize: 50
-    zSize: 50
-    maxHeight: 20
-    minHeight: 20
-    roughness: 1
-    heightDampenerPower: 2
 --- !u!23 &1240730228
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -299,7 +279,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fc8ad07d4cc05c146a6a2f88430a5724, type: 2}
+  - {fileID: 2100000, guid: 71888be76f8a7604abac5ab60f19e0e9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -344,6 +324,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1240730231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1240730226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06a82afbf2f76bd4690c531b74c016bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  settings:
+    mDivisions: 64
+    mSize: 30
+    mHeight: 10
 --- !u!1 &1517620314
 GameObject:
   m_ObjectHideFlags: 0
