@@ -28,7 +28,7 @@ public class TerrainFFT : MonoBehaviour
     [Tooltip("0: no filter; >0: low-pass; <0: high-pass")]
     public float filterR = 0; 
 
-    void Start()
+    void Awake()
     {
         //OneDFFTTest();
 
@@ -85,6 +85,7 @@ public class TerrainFFT : MonoBehaviour
         TerrainData terrainData = terrain.terrainData;
         terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
         terrain.terrainData.heightmapResolution = terrainWidth;
+        terrain.terrainData.alphamapResolution = terrainWidth;
 
         heightMap = new float[width, height];
 
