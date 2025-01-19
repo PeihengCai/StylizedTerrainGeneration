@@ -3,10 +3,12 @@
 public class MidPointImprove : MonoBehaviour
 {
     private Terrain terrainComponent;
+    private TerrainData terrainData;
     [Header("Settings")]
     [Range(0.5f, 1.5f)] public float roughness;
     public float minHeight;
     public float maxHeight;
+    public bool enableNormalization;
 
     private int resolution;
     private float[,] heightMap;
@@ -14,19 +16,32 @@ public class MidPointImprove : MonoBehaviour
     private void Start()
     {
         terrainComponent = Terrain.activeTerrain;
-        resolution = terrainComponent.terrainData.heightmapResolution;
+        terrainData = terrainComponent.terrainData;
+        resolution = terrainData.heightmapResolution;
         
+        GenerateHeightmap();
+    }
+
+    public void GenerateNewTerrain()
+    {
         GenerateHeightmap();
     }
 
     private void GenerateHeightmap()
     {
+        Debug.Log("Generating Heightmap...");
         heightMap = new float[resolution, resolution];
         InitializeCorners();
         DiamondSquare();
-        NormalizeHeightmap();
+        FourSlidesPosition();
+        if (enableNormalization == true)
+        {
+            Debug.Log("Enable Normalization");
+            NormalizeHeightmap();
+        }
         terrainComponent.terrainData.SetHeights(0, 0, heightMap);
     }
+
 
     private void InitializeCorners()
     {
@@ -38,8 +53,9 @@ public class MidPointImprove : MonoBehaviour
     }
 
     /// <summary>
-    /// Diamond-Square
+    /// diamond-Square
     /// </summary>
+    /// 
     private void DiamondSquare()
     {
         int stepSize = resolution - 1;//offset
@@ -114,7 +130,7 @@ public class MidPointImprove : MonoBehaviour
 
 
     /// <summary>
-    /// Average the heights of the 4 corners
+    /// average the heights of the 4 corners
     /// </summary>
     private float AverageCorners(int x, int y, int halfStep)
     {
@@ -127,7 +143,7 @@ public class MidPointImprove : MonoBehaviour
     }
 
     /// <summary>
-    /// Average the heights of the edges
+    /// average the heights of the edges
     /// </summary>
     private float AverageEdges(int x, int y, int halfStep)
     {
@@ -143,10 +159,11 @@ public class MidPointImprove : MonoBehaviour
     }
 
     /// <summary>
-    /// Normalize the heightmap values
+    /// normalize the heightmap values
     /// </summary>
     private void NormalizeHeightmap()
     {
+        Debug.Log("Enable");
         float min = float.MaxValue, max = float.MinValue;
 
         foreach (float value in heightMap)
@@ -162,14 +179,17 @@ public class MidPointImprove : MonoBehaviour
                 heightMap[x, y] = (heightMap[x, y] - min) / (max - min);
             }
         }
+    }
 
-        // 设置四条边界为最低高度
+    private void FourSlidesPosition()
+    {
+        // set 4 slides to the lowest point
         for (int i = 0; i < resolution; i++)
         {
-            heightMap[0, i] = 0.0f;                   // 左边界
-            heightMap[resolution - 1, i] = 0.0f;     // 右边界
-            heightMap[i, 0] = 0.0f;                  // 下边界
-            heightMap[i, resolution - 1] = 0.0f;     // 上边界
+            heightMap[0, i] = 0.0f;
+            heightMap[resolution - 1, i] = 0.0f;
+            heightMap[i, 0] = 0.0f;
+            heightMap[i, resolution - 1] = 0.0f;
         }
     }
 }

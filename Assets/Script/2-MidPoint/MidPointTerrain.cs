@@ -7,6 +7,7 @@ public class MidPointTerrain : MonoBehaviour
     [Range(0.5f, 1.5f)] public float roughness;
     public float minHeight;
     public float maxHeight;
+    public bool enableNormalization;
 
     private int resolution;
     private float[,] heightMap;
@@ -19,12 +20,22 @@ public class MidPointTerrain : MonoBehaviour
         GenerateHeightmap();
     }
 
+    public void GenerateNewTerrain()
+    {
+        GenerateHeightmap();
+    }
+
     private void GenerateHeightmap()
     {
         heightMap = new float[resolution, resolution];
         InitializeCorners();
         PerformDiamondSquare();
-        NormalizeHeightmap();
+        FourSlidesPosition();
+        if (enableNormalization == true)
+        {
+            Debug.Log("Enable Normalization");
+            NormalizeHeightmap();
+        }
         terrainComponent.terrainData.SetHeights(0, 0, heightMap);
     }
 
@@ -38,7 +49,7 @@ public class MidPointTerrain : MonoBehaviour
     }
 
     /// <summary>
-    /// Diamond-Square
+    /// diamond-Square
     /// </summary>
     private void PerformDiamondSquare()
     {
@@ -74,8 +85,9 @@ public class MidPointTerrain : MonoBehaviour
     }
 
     /// <summary>
-    /// Average the heights of the 4 corners
+    /// average the heights of the 4 corners
     /// </summary>
+    /// 
     private float AverageCorners(int x, int y, int halfStep)
     {
         return (
@@ -87,7 +99,7 @@ public class MidPointTerrain : MonoBehaviour
     }
 
     /// <summary>
-    /// Average the heights of the edges
+    /// average the heights of the edges
     /// </summary>
     private float AverageEdges(int x, int y, int halfStep)
     {
@@ -103,10 +115,11 @@ public class MidPointTerrain : MonoBehaviour
     }
 
     /// <summary>
-    /// Normalize the heightmap values
+    /// normalize the heightmap values
     /// </summary>
     private void NormalizeHeightmap()
     {
+        Debug.Log("Enable");
         float min = float.MaxValue, max = float.MinValue;
 
         foreach (float value in heightMap)
@@ -121,6 +134,18 @@ public class MidPointTerrain : MonoBehaviour
             {
                 heightMap[x, y] = (heightMap[x, y] - min) / (max - min);
             }
+        }
+    }
+
+    private void FourSlidesPosition()
+    {
+        // set 4 slides to the lowest point
+        for (int i = 0; i < resolution; i++)
+        {
+            heightMap[0, i] = 0.0f;
+            heightMap[resolution - 1, i] = 0.0f;
+            heightMap[i, 0] = 0.0f;
+            heightMap[i, resolution - 1] = 0.0f;
         }
     }
 }
