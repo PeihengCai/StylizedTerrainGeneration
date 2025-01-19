@@ -1,136 +1,126 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Rendering;
-
-[System.Serializable]
-public class MidTerrainSetting
-{
-    public int mDivisions;
-    public float mSize;
-    public float mHeight;
-}
+﻿using UnityEngine;
 
 public class MidPointTerrain : MonoBehaviour
 {
-    public MidTerrainSetting settings;
+    private Terrain terrainComponent;
+    [Header("Settings")]
+    [Range(0.5f, 1.5f)] public float roughness;
+    public float minHeight;
+    public float maxHeight;
 
-    Vector3[] mVerts;
-    int mVertCount;
+    private int resolution;
+    private float[,] heightMap;
 
     private void Start()
     {
-        CreateMidTerrain();
+        terrainComponent = Terrain.activeTerrain;
+        resolution = terrainComponent.terrainData.heightmapResolution;
+
+        GenerateHeightmap();
     }
 
-    void CreateMidTerrain()
+    private void GenerateHeightmap()
     {
-        int mDivisions = settings.mDivisions;
-        float mSize = settings.mSize;
-        float mHeight = settings.mHeight;
+        heightMap = new float[resolution, resolution];
+        InitializeCorners();
+        PerformDiamondSquare();
+        NormalizeHeightmap();
+        terrainComponent.terrainData.SetHeights(0, 0, heightMap);
+    }
 
-        //vertex array
-        mVertCount = (mDivisions + 1) * (mDivisions + 1);
-        mVerts = new Vector3[mVertCount];
-        Vector2[] uvs = new Vector2[mVertCount];
-        int[] tris = new int[mDivisions * mDivisions * 2 * 3];
+    private void InitializeCorners()
+    {
+        //4 corners, add random value
+        heightMap[0, 0] = Random.Range(minHeight, maxHeight);
+        heightMap[0, resolution - 1] = Random.Range(minHeight, maxHeight);
+        heightMap[resolution - 1, 0] = Random.Range(minHeight, maxHeight);
+        heightMap[resolution - 1, resolution - 1] = Random.Range(minHeight, maxHeight);
+    }
 
-        float halfSize = mSize * 0.5f;
-        float divisionSize = mSize / mDivisions;
+    /// <summary>
+    /// Diamond-Square
+    /// </summary>
+    private void PerformDiamondSquare()
+    {
+        int stepSize = resolution - 1;//offset
+        float heightRange = maxHeight - minHeight;
 
-        Mesh mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = mesh;
-
-        //build up triangles
-        int triOffset = 0;
-
-        for (int i = 0; i <= mDivisions; i++)
+        while (stepSize > 1)
         {
-            for (int j = 0; j <= mDivisions; j++)
+            int halfStep = stepSize / 2;
+
+            // Diamond step
+            //set the midpoint of that square to be the average of the four corner points plus a random value.
+            for (int x = halfStep; x < resolution; x += stepSize)
             {
-                mVerts[i * (mDivisions + 1) + j] = new Vector3(-halfSize + j * divisionSize, 0.0f, halfSize - i * divisionSize);
-                uvs[i * (mDivisions + 1) + j] = new Vector2((float)i / mDivisions, (float)j / mDivisions);
-
-                if (i < mDivisions && j < mDivisions)
+                for (int y = halfStep; y < resolution; y += stepSize)
                 {
-                    int topleft = i * (mDivisions + 1) + j;
-                    int botleft = (i + 1) * (mDivisions + 1) + j;
-
-                    //first triangle
-                    tris[triOffset] = topleft;
-                    tris[triOffset + 1] = topleft + 1;
-                    tris[triOffset + 2] = botleft + 1;
-
-                    //second triangle
-                    tris[triOffset + 3] = topleft;
-                    tris[triOffset + 4] = botleft + 1;
-                    tris[triOffset + 5] = botleft;
-
-                    triOffset += 6;
+                    heightMap[x, y] = AverageCorners(x, y, halfStep) + Random.Range(-heightRange, heightRange);
                 }
             }
-        }
 
-        //set the 4 corners of the array to initial value
-        mVerts[0].y = Random.Range(-mHeight, mHeight);
-        mVerts[mDivisions].y = Random.Range(-mHeight, mHeight);
-        mVerts[mVerts.Length - 1].y = Random.Range(-mHeight, mHeight);
-        mVerts[mVerts.Length - 1 - mDivisions].y = Random.Range(-mHeight, mHeight);
-
-        //iteration loop
-        int iterations = (int)Mathf.Log(mDivisions, 2);
-        int numSquares = 1;
-        int squareSize = mDivisions;
-
-        for (int i = 0; i < iterations; i++)
-        {
-            int row = 0;
-            for (int j = 0; j < numSquares; j++)
+            // Square step
+            //For each diamond in the array, set the midpoint of that diamond to be the average of the four corner points plus a random value.
+            for (int x = 0; x < resolution; x += halfStep)
             {
-                int column = 0;
-                for (int k = 0; k < numSquares; k++)
+                for (int y = (x + halfStep) % stepSize; y < resolution; y += stepSize)
                 {
-                    //call diamond square
-                    DiamondSquare(row, column, squareSize, mHeight);
-
-                    column += squareSize;
-
+                    heightMap[x, y] = AverageEdges(x, y, halfStep) + Random.Range(-heightRange, heightRange);
                 }
-                row += squareSize;
             }
-            numSquares *= 2;
-            squareSize /= 2;
-            mHeight *= 0.5f;//height go down speed
+            stepSize /= 2;
+            heightRange *= Mathf.Pow(2, -roughness);
+        }
+    }
+
+    /// <summary>
+    /// Average the heights of the 4 corners
+    /// </summary>
+    private float AverageCorners(int x, int y, int halfStep)
+    {
+        return (
+            heightMap[x - halfStep, y - halfStep] +
+            heightMap[x + halfStep, y - halfStep] +
+            heightMap[x - halfStep, y + halfStep] +
+            heightMap[x + halfStep, y + halfStep]
+        ) * 0.25f;
+    }
+
+    /// <summary>
+    /// Average the heights of the edges
+    /// </summary>
+    private float AverageEdges(int x, int y, int halfStep)
+    {
+        float total = 0.0f;
+        int count = 0;
+
+        if (x - halfStep >= 0) { total += heightMap[x - halfStep, y]; count++; }
+        if (x + halfStep < resolution) { total += heightMap[x + halfStep, y]; count++; }
+        if (y - halfStep >= 0) { total += heightMap[x, y - halfStep]; count++; }
+        if (y + halfStep < resolution) { total += heightMap[x, y + halfStep]; count++; }
+
+        return total / count;
+    }
+
+    /// <summary>
+    /// Normalize the heightmap values
+    /// </summary>
+    private void NormalizeHeightmap()
+    {
+        float min = float.MaxValue, max = float.MinValue;
+
+        foreach (float value in heightMap)
+        {
+            if (value < min) min = value;
+            if (value > max) max = value;
         }
 
-        //setup mesh
-        mesh.vertices = mVerts;
-        mesh.uv = uvs;
-        mesh.triangles = tris;
-
-        mesh.RecalculateBounds();
-        mesh.RecalculateNormals();
+        for (int x = 0; x < resolution; x++)
+        {
+            for (int y = 0; y < resolution; y++)
+            {
+                heightMap[x, y] = (heightMap[x, y] - min) / (max - min);
+            }
+        }
     }
-
-    void DiamondSquare(int row, int column, int size, float offset)
-    {
-        //diamond step
-        //set the midpoint of that square to be the average of the four corner points plus a random value.
-        int halfSize = (int)(size * 0.5f);
-        int mDivisions = settings.mDivisions;
-        int topleft = row * (mDivisions + 1) + column;
-        int botleft = (row + size) * (mDivisions + 1) + column;
-
-        int mid = (int)(row + halfSize) * (mDivisions + 1) + (int)(column + halfSize);
-        mVerts[mid].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[botleft].y + mVerts[botleft + size].y) * 0.25f + Random.Range(-offset, offset);
-
-        //square step
-        //For each diamond in the array, set the midpoint of that diamond to be the average of the four corner points plus a random value.
-        mVerts[topleft + halfSize].y = (mVerts[topleft].y + mVerts[topleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
-        mVerts[mid - halfSize].y = (mVerts[topleft].y + mVerts[botleft].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
-        mVerts[mid + halfSize].y = (mVerts[topleft + size].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
-        mVerts[botleft + halfSize].y = (mVerts[botleft].y + mVerts[botleft + size].y + mVerts[mid].y) / 3 + Random.Range(-offset, offset);
-    }
-
-
 }
