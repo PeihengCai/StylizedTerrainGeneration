@@ -6,94 +6,72 @@ using System.Numerics;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering.Universal.Internal;
+using UnityEngine.UIElements;
 
 public class TerrainPerlin : MonoBehaviour
 {
     public Terrain terrain;
 
     public int maxHeight = 600;
-    public int terrainWidth = 512;
+    public int terrainWidth = 512;  
     public int terrainHeight = 512;
     public int heightmapResolution = 512; // resolution of heightmap, 512, 1024, 2048...
-    public int detailResolution = 1024;
+    public int detailResolution = 1024; 
     public float[,] heightMap;
 
-    [Header("Gaussian")]
-    public float gaussianMean = 0f;
-    public float gaussianDev = 1f;
+    [Header("Perlin")]
+    public bool ifUnityPerlin = true;
+    public int octaves = 4;
+    public float persistance = 0.5f;
+    public float lacunarity = 2f;
+    public int scale = 50;
+    public int seed = 1;
+    public UnityEngine.Vector2 offset = new UnityEngine.Vector2(100, 200);
+    private UnityEngine.Vector2[] octaveOffsets;
+    private float maxNoiseHeight = float.MinValue;
+    private float minNoiseHeight = float.MaxValue;
 
-    [Header("FFT")]
-    private Complex[,] complexMap;
-    private Dictionary<int, Complex[]> twiddleFactor;
-    [Tooltip("0: no filter; >0: low-pass; <0: high-pass")]
-    public float filterR = 0;
-
-    void Start()
+    void Awake()
     {
         //OneDFFTTest();
 
         CreateNewTerrain(terrainWidth, terrainHeight);
-        FastFourierTrans(terrainWidth, terrainHeight);
-        FFTFilter(terrainWidth, terrainHeight);
-        IFFT(terrainWidth, terrainHeight);
-
-        for (int x = 0; x < terrainWidth; x++)
-        {
-            for (int y = 0; y < terrainHeight; y++)
-            {
-                heightMap[x, y] = (float)complexMap[x, y].Magnitude;
-                //heightMap[x, y] = (float)complexMap[x, y].Real;
-            }
-        }
-
-        terrain.terrainData.SetHeights(0, 0, heightMap);
-    }
-
-    private void OneDFFTTest()
-    {
-        int N = 8; // 信号长度
-        double frequency = 1; // 正弦波的频率
-
-        List<Complex> sineWaveSignal = new List<Complex>();
-        for (int n = 0; n < N; n++)
-        {
-            double value = Math.Sin(2 * Math.PI * frequency * n / N);
-            sineWaveSignal.Add(new Complex(value, 0));
-        }
-        for (int i = 0; i < sineWaveSignal.Count; i++)
-        {
-            Debug.Log(sineWaveSignal[i]);
-        }
-
-        Debug.Log(" ");
-        InitializeTwiddleFactors(N);
-        Complex[] result = OneDFFT(sineWaveSignal.ToArray());
-        for (int i = 0; i < result.Length; i++)
-        {
-            Debug.Log(result[i]);
-        }
-
-        Complex[] result2 = OnedIFFT(result);
-        for (int i = 0; i < result2.Length; i++)
-        {
-            Debug.Log(result2[i]);
-        }
     }
 
     private void CreateNewTerrain(int width, int height)
     {
         TerrainData terrainData = terrain.terrainData;
-        terrainData.size = new UnityEngine.Vector3(width, maxHeight, height);
+        terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
         terrain.terrainData.heightmapResolution = terrainWidth;
+        terrain.terrainData.alphamapResolution = terrainWidth;
 
         heightMap = new float[width, height];
 
-        for (int x = 0; x < width; x++)
+        System.Random prng = new System.Random(seed);
+        octaveOffsets = new UnityEngine.Vector2[octaves];
+        for (int i = 0; i < octaves; i++)
         {
-            for (int y = 0; y < height; y++)
-            {
-                heightMap[x, y] = CreateGaussian(gaussianMean, gaussianDev);
+            float offsetX = prng.Next(-100000,100000) + offset.x;
+            float offsetY = prng.Next(-100000,100000) + offset.y;
+            octaveOffsets[i] = new UnityEngine.Vector2(offsetX, offsetY);
+        }
 
+        for (int x = 0; x < height; x++)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                heightMap[x, y] = CreatePerlin(x, y);
+            }
+        }
+
+        // Normalize
+        for (int x = 0; x < height; x++)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                heightMap[x, y] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, heightMap[x, y]);
+                if (x == 0 || y == 0) heightMap[x, y] = 0;
             }
         }
 
@@ -103,195 +81,144 @@ public class TerrainPerlin : MonoBehaviour
 
     }
 
-    public float CreateGaussian(float mean, float deviation)
+    public float CreatePerlin(int x, int y)
     {
-        float u1 = UnityEngine.Random.value;
-        float u2 = UnityEngine.Random.value;
+        float amplitude = 1;
+        float frequency = 1;
+        float noiseHeight = 0;
 
-        // Box-Muller
-        float z0 = Mathf.Sqrt(-2.0f * Mathf.Log(u1)) * Mathf.Cos(2.0f * Mathf.PI * u2);
-        float randomY = mean + z0 * deviation;
+        for (int i = 0; i < octaves; i++)
+        {
+            float sampleX = (float)x / scale * frequency + octaveOffsets[i].x;
+            float sampleY = (float)y / scale * frequency + octaveOffsets[i].y;
 
-        //return Mathf.Clamp(randomY, -1f, 1f);
-        return randomY;
+            float perlinValue = 0;
+            if(ifUnityPerlin) perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
+            else perlinValue = PerlinNoise.GetPerlinNoise(sampleX, sampleY);
+            //Debug.Log(perlinValue+" "+perlinValueCPP);
+            noiseHeight += perlinValue * amplitude;
+
+            amplitude *= persistance;
+            frequency *= lacunarity;
+        } 
+
+        if (noiseHeight > maxNoiseHeight) maxNoiseHeight = noiseHeight;
+        else if (noiseHeight < minNoiseHeight) minNoiseHeight = noiseHeight;
+
+        //Debug.Log("now: "+noiseHeight +"max: "+maxNoiseHeight+" min: "+minNoiseHeight);
+
+        return noiseHeight;
+    }
+}
+
+public class PerlinNoise
+{
+    private static int[] permutation256 = new int[256]
+    {
+        151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37,
+        240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177,
+        33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146,
+        158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25,
+        63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100,
+        109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206,
+        59, 227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153,
+        101, 155, 167, 43, 172, 9, 129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218,
+        246, 97, 228, 251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107,
+        49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205,
+        93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
+    };
+
+    private static int[] permutation512 = new int[512];
+
+    private static void CopyP(){
+        for (int i=0; i < 256 ; i++) 
+            permutation512[256+i] = permutation512[i] = permutation256[i];
     }
 
-    private void FastFourierTrans(int width, int height)
+    private static float Fade(float x) => x * x * x * (x * (x * 6 - 15) + 10);
+
+    private static float Interpolate(float x, float y, float t)
     {
-        // Change from real number to complex number
-        complexMap = new Complex[width, height];
-        for (int row = 0; row < height; row++)
-        {
-            for (int col = 0; col < width; col++)
-            {
-                /***************************************/
-                /***************************************/
-                /******Change the imagine if wrong******/
-                /***************************************/
-                /***************************************/
-                complexMap[row, col] = new Complex(heightMap[row, col], 0);
-            }
-        }
-
-        // Apply FFT for each row
-        InitializeTwiddleFactors(width);
-        Complex[] x_n = new Complex[width];
-        for (int row = 0; row < height; row++)
-        {
-            // Get the entire row xn[width]
-            for (int col = 0; col < width; col++) x_n[col] = complexMap[row, col];
-            // Apply 1D FFT to the row
-            x_n = OneDFFT(x_n);
-            for (int col = 0; col < width; col++) complexMap[row, col] = x_n[col];
-        }
-
-        // Apply FFT for each col
-        InitializeTwiddleFactors(height);
-        Complex[] y_n = new Complex[height];
-        for (int col = 0; col < width; col++)
-        {
-            // Get the entire col xn[height]
-            for (int row = 0; row < height; row++) y_n[row] = complexMap[row, col];
-
-            // Apply 1D FFT to the col
-            y_n = OneDFFT(y_n);
-            for (int row = 0; row < height; row++) complexMap[row, col] = y_n[row];
-        }
+        return Mathf.SmoothStep(x,y,t);
     }
 
-    private void InitializeTwiddleFactors(int maxN)
+    private static float Grad(int hash, float x, float y) 
     {
-        twiddleFactor = new Dictionary<int, Complex[]>();
+        // fake random gradient
+        // h = 0: x+y
+        // h = 1: -x+y
+        // h = 2: x-y
+        // h = 3: -x-y
+        /*int h = hash & 3;
+        float u = h < 2 ? x : y;
+        float v = h < 2 ? y : x;
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);*/
+        /*int h = hash & 7;
+        float u = h < 4 ? x : y;
+        float v = h < 4 ? y : x;
+        return (h & 1) == 0 ? u : -u + (h & 2) == 0 ? v : -v;*/
+        int h = hash & 7;
 
-        // Complex.Exp(new Complex(0, -2 * Math.PI * i / N))
-        // N: W_N[0] - W_N[n/2-1]
-        // W_N[k] = W_N[k + N/2] when k oven
-        // W_N[k] = -W_N[k + N/2] when k odd
-        for (int n = 2; n <= maxN; n *= 2)
+        switch(h)
         {
-            Complex[] factors = new Complex[n / 2];
-            for (int k = 0; k < n / 2; k++)
-            {
-                factors[k] = Complex.Exp(new Complex(0, -2 * Math.PI * k / n));
-            }
-            twiddleFactor[n] = factors;
+            case 0:
+                return x+y;
+            case 1:
+                return -x+y;
+            case 2:
+                return x-y;
+            case 3:
+                return -x-y;
+            case 4:
+                return x;
+            case 5:
+                return y;
+            case 6:
+                return -x;
+            case 7:
+                return -y;
         }
+        return 0;
     }
 
-    private Complex[] OneDFFT(Complex[] x_n)
+    private static float DotGrad(UnityEngine.Vector2 pos, UnityEngine.Vector2 grid)
     {
-        int N = x_n.Length;
-
-        // The smallest unit
-        if (N <= 1) return x_n;
-
-        // Even
-        Complex[] evenPart = new Complex[N / 2];
-        for (int i = 0; i < N / 2; i++)
-        {
-            evenPart[i] = x_n[2 * i];
-        }
-        evenPart = OneDFFT(evenPart);
-
-        // Odd
-        Complex[] oddPart = new Complex[N / 2];
-        for (int i = 0; i < N / 2; i++)
-        {
-            oddPart[i] = x_n[2 * i + 1];
-        }
-        oddPart = OneDFFT(oddPart);
-
-        // Merge
-        Complex[] mergeList = new Complex[N];
-        for (int i = 0; i < N / 2; i++)
-        {
-            //Complex T = oddPart[i] * Complex.Exp(new Complex(0, -2 * Math.PI * i / N));
-            Complex T = oddPart[i] * twiddleFactor[N][i];
-            mergeList[i] = evenPart[i] + T;
-            mergeList[i + N / 2] = evenPart[i] - T;
-        }
-
-        return mergeList;
-
+        UnityEngine.Vector2 gradient = RandomGrad(grid);
+        return UnityEngine.Vector2.Dot(gradient, pos-grid);
     }
 
-    private void FFTFilter(int width, int height)
+    private static UnityEngine.Vector2 RandomGrad(UnityEngine.Vector2 pos)
     {
-        // Frequency Centralization
-        Complex[,] shiftedComplexMap = new Complex[width, height];
-
-        //(u', v') = ( (u+N/2)modN, (v+M/2)modM )
-        for (int row = 0; row < height; row++)
-        {
-            int u = (row + height / 2) % height;
-            for (int col = 0; col < width; col++)
-            {
-                int v = (col + width / 2) % width;
-                //float f_u = (u - height / 2) / (float)height;
-                //float f_v = (v - width / 2) / (float)width;
-                float f_u = u - height / 2;
-                float f_v = v - width / 2;
-                float frequency = Mathf.Sqrt(f_u * f_u + f_v * f_v);
-                //float frequency = Mathf.Sqrt((float)row/height * row/height + (float)col/width * col/width);
-                float filter = (frequency > 10e-6) ? 1 / Mathf.Pow(frequency, filterR) : 1;
-
-                shiftedComplexMap[u, v] = complexMap[row, col] * filter;
-            }
-        }
-
-        // shift back
-        for (int row = 0; row < height; row++)
-        {
-            int u = (row + height / 2) % height;
-            for (int col = 0; col < width; col++)
-            {
-                int v = (col + width / 2) % width;
-                complexMap[row, col] = shiftedComplexMap[u, v];
-            }
-        }
+        float random = Mathf.Sin(666+pos.x*5678+pos.y*1234)*4321;
+        return new UnityEngine.Vector2(Mathf.Sin(random), Mathf.Cos(random));
     }
 
-    private void IFFT(int width, int height)
+    static PerlinNoise()
     {
-        // Apply IFFT for each row
-        Complex[] x_n = new Complex[width];
-        for (int row = 0; row < height; row++)
-        {
-            // Get the entire row xn[width]
-            for (int col = 0; col < width; col++) x_n[col] = complexMap[row, col];
-            // Apply 1D FFT to the row
-            x_n = OnedIFFT(x_n);
-            for (int col = 0; col < width; col++) complexMap[row, col] = x_n[col];
-        }
-
-        // Apply FFT for each col
-        Complex[] y_n = new Complex[height];
-        for (int col = 0; col < width; col++)
-        {
-            // Get the entire col xn[height]
-            for (int row = 0; row < height; row++) y_n[row] = complexMap[row, col];
-
-            // Apply 1D FFT to the col
-            y_n = OnedIFFT(y_n);
-            for (int row = 0; row < height; row++) complexMap[row, col] = y_n[row];
-        }
+        Debug.Log("construct");
+        CopyP();
     }
 
-    private Complex[] OnedIFFT(Complex[] x_n)
+    public static float GetPerlinNoise(float x, float y)
     {
-        // conj (x[n])
-        for (int i = 0; i < x_n.Length; i++)
-            x_n[i] = Complex.Conjugate(x_n[i]);
+        int X = (int)Mathf.Floor(x) & 255;
+        int Y = (int)Mathf.Floor(y) & 255;
 
-        // FFT( conj(x[n]) )
-        x_n = OneDFFT(x_n);
+        x -= Mathf.Floor(x);
+        y -= Mathf.Floor(y);
 
-        // 1/N * conj ( FFT( conj(x[n]) ) )
-        for (int i = 0; i < x_n.Length; i++)
-            x_n[i] = Complex.Conjugate(x_n[i]) / x_n.Length;
+        float u = Fade(x);
+        float v = Fade(y);
 
-        return x_n;
+        int hashLB = permutation512[X] + Y;
+        int hashRB = permutation512[X + 1] + Y;
+
+        return (Interpolate(Interpolate(
+            Grad(permutation512[hashLB], x, y),
+            Grad(permutation512[hashRB], x - 1, y), u
+        ), Interpolate(
+            Grad(permutation512[hashLB + 1], x, y - 1),
+            Grad(permutation512[hashRB + 1], x - 1, y - 1), u
+        ), v) + 1) * 0.5f;
     }
-
-
 }

@@ -43,6 +43,7 @@ public class TerrainFFT : MonoBehaviour
             {
                 heightMap[x, y] = (float)complexMap[x, y].Magnitude;
                 //heightMap[x, y] = (float)complexMap[x, y].Real;
+                if (x == 0 || y == 0) heightMap[x, y] = 0;
             }
         }
 
