@@ -29,11 +29,14 @@ public class PerlinMenu : MonoBehaviour
     public TMP_InputField offsetY;
 
 
+
     // Start is called before the first frame update
     void Start()
     {
         resolution.onValueChanged.AddListener(ResolutionSetting);
         height.onValueChanged.AddListener(HeightSetting);
+
+
         octave.onValueChanged.AddListener(OctaveSetting);
         persistence.onValueChanged.AddListener(PersistSetting);
         lacunarity.onValueChanged.AddListener(LacSetting);
@@ -56,6 +59,7 @@ public class PerlinMenu : MonoBehaviour
         menu.variables.offset.y = int.Parse(offsetY.text);
     }
 
+    
     public void ResolutionSetting(float value)
     {
         resolutionText.text = math.pow(2,(value+6)).ToString();
@@ -67,6 +71,7 @@ public class PerlinMenu : MonoBehaviour
         heightText.text = value.ToString();
         menu.variables.height = (int)value;
     }
+    
 
     public void OctaveSetting(float value)
     {
@@ -106,6 +111,8 @@ public class PerlinMenu : MonoBehaviour
     {
         menu.variables.offset.y = int.Parse(text);
     }
+
+
 
 
 }

@@ -26,6 +26,11 @@ public class MidpointMenu : MonoBehaviour
     public Slider roughnessSlider;
     public TMP_Text roughnessText;
 
+    [Header("Heightmap Resolution")]
+    public TMP_Dropdown resolutionDropdown;
+    public Terrain terrain;
+    public Terrain terrain2;
+
 
     // Start is called before the first frame update
     void Start()
@@ -46,6 +51,19 @@ public class MidpointMenu : MonoBehaviour
         menu.variables.width = 128;
         menu.variables.length = 128;
         menu.variables.midheight = 80;
+
+        //resolution
+        resolutionDropdown.ClearOptions();
+        List<string> resolutionOptions = new List<string> { "33", "65", "129", "257", "513", "1025" };
+        resolutionDropdown.AddOptions(resolutionOptions);
+        int currentResolution = terrain.terrainData.heightmapResolution;
+        int currentResolution2 = terrain2.terrainData.heightmapResolution;
+        resolutionDropdown.value = resolutionOptions.IndexOf(currentResolution.ToString());
+        resolutionDropdown.value = resolutionOptions.IndexOf(currentResolution2.ToString());
+
+        resolutionDropdown.onValueChanged.AddListener(OnResolutionChanged);
+
+
     }
 
     void OnEnable()
@@ -120,5 +138,12 @@ public class MidpointMenu : MonoBehaviour
         roughnessText.text = $"{value:F2}";
     }
 
-
+    public void OnResolutionChanged(int value)
+    {
+        int newResolution = int.Parse(resolutionDropdown.options[value].text);
+        TerrainData terrainData = terrain.terrainData;
+        TerrainData terrainData2 = terrain2.terrainData;
+        terrainData.heightmapResolution = newResolution;
+        terrainData2.heightmapResolution = newResolution;
+    }
 }

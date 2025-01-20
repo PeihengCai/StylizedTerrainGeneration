@@ -38,25 +38,25 @@ public class MainMenu : MonoBehaviour
 
     public void MenuButtonClick()
     {
-        mainMenu.SetActive(!isMenuOn);
         isMenuOn = !isMenuOn;
+        mainMenu.SetActive(isMenuOn);
 
         if (isMenuOn && isArtOn)
         {
-            artMenu.SetActive(false);
             isArtOn = false;
+            artMenu.SetActive(false);
         }
     }
 
     public void ArtButtonClick()
     {
-        artMenu.SetActive(!isArtOn);
         isArtOn = !isArtOn;
+        artMenu.SetActive(isArtOn);
 
         if (isMenuOn && isArtOn)
         {
-            mainMenu.SetActive(false);
             isMenuOn = false;
+            mainMenu.SetActive(false);
         }
     }
 
@@ -89,7 +89,9 @@ public class MainMenu : MonoBehaviour
                 midTerrains.minHeight = variables.minHeight;
                 midTerrains.maxHeight = variables.maxHeight;
                 midTerrains.enableNormalization = variables.enableNormalization;
+                
                 midTerrains.GenerateNewTerrain();
+                midTerrains.gameObject.transform.position = new Vector3(-variables.width/2, 0, -variables.length/2);
 
                 artMenu.GetComponent<UI_Material>().terrain = midTerrains.gameObject.GetComponent<Terrain>();
                 artMenu.GetComponent<UI_Material>().InitializeMaterials();
@@ -101,7 +103,9 @@ public class MainMenu : MonoBehaviour
                 mid2Terrains.minHeight = variables.minHeight;
                 mid2Terrains.maxHeight = variables.maxHeight;
                 mid2Terrains.enableNormalization = variables.enableNormalization;
+
                 mid2Terrains.GenerateNewTerrain();
+                mid2Terrains.gameObject.transform.position = new Vector3(-variables.width/2, 0, -variables.length/2);
 
                 artMenu.GetComponent<UI_Material>().terrain = mid2Terrains.gameObject.GetComponent<Terrain>();
                 artMenu.GetComponent<UI_Material>().InitializeMaterials();
@@ -118,7 +122,9 @@ public class MainMenu : MonoBehaviour
                 perlinTerrains.scale = variables.scale;
                 perlinTerrains.seed = variables.seed;
                 perlinTerrains.offset = variables.offset;
+
                 perlinTerrains.StartGenerate();
+                perlinTerrains.gameObject.transform.position = new Vector3(-variables.resolution/2, 0, -variables.resolution/2);
 
                 artMenu.GetComponent<UI_Material>().terrain = perlinTerrains.gameObject.GetComponent<Terrain>();
                 artMenu.GetComponent<UI_Material>().InitializeMaterials();
@@ -130,7 +136,9 @@ public class MainMenu : MonoBehaviour
                 FFTTerrains.maxHeight = variables.height;
                 FFTTerrains.gaussianMean = variables.gaussianMean;
                 FFTTerrains.gaussianDev = variables.gaussianDev;
+
                 FFTTerrains.StartGenerate();
+                FFTTerrains.gameObject.transform.position = new Vector3(-variables.resolution/2, 0, -variables.resolution/2);
 
                 artMenu.GetComponent<UI_Material>().terrain = FFTTerrains.gameObject.GetComponent<Terrain>();
                 artMenu.GetComponent<UI_Material>().InitializeMaterials();
