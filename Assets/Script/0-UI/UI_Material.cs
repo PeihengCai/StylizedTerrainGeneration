@@ -42,6 +42,10 @@ public class UI_Material : MonoBehaviour
     {
         float initialHeight = waterPlane.transform.position.y;
         waterHeightInput.text = initialHeight.ToString("F2");
+        
+        InitializeMaterialDropdown(materialDropdown, materials);
+        InitializeMaterialDropdown(waterDropdown, waterMaterials);
+        InitializeSkyDropdown();
     }
 
     public void InitializeMaterials()

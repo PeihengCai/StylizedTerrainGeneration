@@ -10547,7 +10547,7 @@ MonoBehaviour:
   m_CaptionText: {fileID: 1155559366}
   m_CaptionImage: {fileID: 0}
   m_Placeholder: {fileID: 0}
-  m_ItemText: {fileID: 0}
+  m_ItemText: {fileID: 671486276}
   m_ItemImage: {fileID: 0}
   m_Value: 0
   m_Options:
@@ -15979,7 +15979,7 @@ MonoBehaviour:
   m_CaptionText: {fileID: 1417869757}
   m_CaptionImage: {fileID: 0}
   m_Placeholder: {fileID: 0}
-  m_ItemText: {fileID: 0}
+  m_ItemText: {fileID: 1792860326}
   m_ItemImage: {fileID: 0}
   m_Value: 0
   m_Options:
@@ -21172,7 +21172,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 60}
+  m_SizeDelta: {x: 0, y: 80}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1678216566
 GameObject:
