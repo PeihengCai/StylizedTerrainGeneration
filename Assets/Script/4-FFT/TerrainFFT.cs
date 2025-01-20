@@ -14,8 +14,6 @@ public class TerrainFFT : MonoBehaviour
     public int maxHeight = 600;
     public int terrainWidth = 512;  
     public int terrainHeight = 512;
-    public int heightmapResolution = 512; // resolution of heightmap, 512, 1024, 2048...
-    public int detailResolution = 1024; 
     public float[,] heightMap;
 
     [Header("Gaussian")]
@@ -28,18 +26,23 @@ public class TerrainFFT : MonoBehaviour
     [Tooltip("0: no filter; >0: low-pass; <0: high-pass")]
     public float filterR = 0; 
 
-    void Awake()
+    void Start()
+    {
+
+    }
+
+    public void StartGenerate()
     {
         //OneDFFTTest();
 
-        CreateNewTerrain(terrainWidth, terrainHeight);
-        FastFourierTrans(terrainWidth, terrainHeight);
-        FFTFilter(terrainWidth, terrainHeight);
-        IFFT(terrainWidth, terrainHeight);
+        CreateNewTerrain(terrainWidth, terrainWidth);
+        FastFourierTrans(terrainWidth, terrainWidth);
+        FFTFilter(terrainWidth, terrainWidth);
+        IFFT(terrainWidth, terrainWidth);
 
         for (int x = 0; x < terrainWidth; x++)
         {
-            for (int y = 0; y < terrainHeight; y++)
+            for (int y = 0; y < terrainWidth; y++)
             {
                 heightMap[x, y] = (float)complexMap[x, y].Magnitude;
                 //heightMap[x, y] = (float)complexMap[x, y].Real;
@@ -48,6 +51,8 @@ public class TerrainFFT : MonoBehaviour
         }
 
         terrain.terrainData.SetHeights(0, 0, heightMap);
+        terrain.terrainData.size = new UnityEngine.Vector3(terrainWidth, maxHeight, terrainWidth); 
+        
     }
 
     private void OneDFFTTest()
@@ -84,21 +89,25 @@ public class TerrainFFT : MonoBehaviour
     private void CreateNewTerrain(int width, int height)
     {
         TerrainData terrainData = terrain.terrainData;
-        terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
+        terrainData.size = new UnityEngine.Vector3(terrainWidth, maxHeight, terrainWidth); 
+        Debug.Log(terrainData.size);
         terrain.terrainData.heightmapResolution = terrainWidth;
         terrain.terrainData.alphamapResolution = terrainWidth;
 
-        heightMap = new float[width, height];
+        heightMap = new float[terrainWidth, terrainWidth];
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < terrainWidth; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < terrainWidth; y++)
             {
                 heightMap[x, y] = CreateGaussian(gaussianMean, gaussianDev);
             }
         }
+        
 
         terrainData.SetHeights(0, 0, heightMap);
+        terrainData.size = new UnityEngine.Vector3(terrainWidth, maxHeight, terrainWidth); 
+        
 
         //terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
 

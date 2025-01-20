@@ -25,19 +25,30 @@ public class UI_Material : MonoBehaviour
 
     private void Start()
     {
-        InitializeMaterialDropdown(materialDropdown, materials);
-        InitializeMaterialDropdown(waterDropdown, waterMaterials);
-        InitializeSkyDropdown();
-
         materialDropdown.onValueChanged.AddListener(OnTerrainMaterialSelected);
         waterDropdown.onValueChanged.AddListener(OnWaterMaterialSelected);
         skyDropdown.onValueChanged.AddListener(OnColorSelected);
 
         //waterheight
+        waterHeightInput.onEndEdit.AddListener(OnWaterHeightInputChanged);
+        
+        InitializeMaterialDropdown(materialDropdown, materials);
+        InitializeMaterialDropdown(waterDropdown, waterMaterials);
+        InitializeSkyDropdown();
+
+    }
+
+    void OnEnable()
+    {
         float initialHeight = waterPlane.transform.position.y;
         waterHeightInput.text = initialHeight.ToString("F2");
-        waterHeightInput.onEndEdit.AddListener(OnWaterHeightInputChanged);
+    }
 
+    public void InitializeMaterials()
+    {
+        ApplyMaterial(materials[materialDropdown.value]);
+        ApplyWaterMaterial(waterMaterials[waterDropdown.value]);
+        targetCamera.backgroundColor = sky[skyDropdown.value];
     }
 
     private void InitializeMaterialDropdown(TMP_Dropdown dropdown, Material[] materials)

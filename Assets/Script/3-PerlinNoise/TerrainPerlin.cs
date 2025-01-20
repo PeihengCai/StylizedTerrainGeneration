@@ -16,8 +16,6 @@ public class TerrainPerlin : MonoBehaviour
     public int maxHeight = 600;
     public int terrainWidth = 512;  
     public int terrainHeight = 512;
-    public int heightmapResolution = 512; // resolution of heightmap, 512, 1024, 2048...
-    public int detailResolution = 1024; 
     public float[,] heightMap;
 
     [Header("Perlin")]
@@ -32,10 +30,14 @@ public class TerrainPerlin : MonoBehaviour
     private float maxNoiseHeight = float.MinValue;
     private float minNoiseHeight = float.MaxValue;
 
-    void Awake()
+    void Start()
+    {
+        
+    }
+
+    public void StartGenerate()
     {
         //OneDFFTTest();
-
         CreateNewTerrain(terrainWidth, terrainHeight);
     }
 
@@ -76,6 +78,7 @@ public class TerrainPerlin : MonoBehaviour
         }
 
         terrainData.SetHeights(0, 0, heightMap);
+        terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
 
         //terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
 
