@@ -9,6 +9,7 @@ public class Variable
     public int resolution = 64;
 
     // Midpoint
+    public int midResolution;
     public int width;
     public int length;
     public int midheight;

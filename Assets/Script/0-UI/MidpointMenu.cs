@@ -141,9 +141,6 @@ public class MidpointMenu : MonoBehaviour
     public void OnResolutionChanged(int value)
     {
         int newResolution = int.Parse(resolutionDropdown.options[value].text);
-        TerrainData terrainData = terrain.terrainData;
-        TerrainData terrainData2 = terrain2.terrainData;
-        terrainData.heightmapResolution = newResolution;
-        terrainData2.heightmapResolution = newResolution;
+        menu.variables.midResolution = newResolution;
     }
 }

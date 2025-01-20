@@ -84,12 +84,14 @@ public class MainMenu : MonoBehaviour
         switch (algorithmChosen)
         {
             case 0:
+                midTerrains.gameObject.GetComponent<Terrain>().terrainData.heightmapResolution = variables.midResolution;
                 midTerrains.gameObject.GetComponent<Terrain>().terrainData.size = new Vector3(variables.width, variables.midheight, variables.length);
+                
                 midTerrains.roughness = variables.roughness;
                 midTerrains.minHeight = variables.minHeight;
                 midTerrains.maxHeight = variables.maxHeight;
                 midTerrains.enableNormalization = variables.enableNormalization;
-                
+
                 midTerrains.GenerateNewTerrain();
                 midTerrains.gameObject.transform.position = new Vector3(-variables.width/2, 0, -variables.length/2);
 
@@ -98,7 +100,9 @@ public class MainMenu : MonoBehaviour
                 
                 break;
             case 1:
+                mid2Terrains.gameObject.GetComponent<Terrain>().terrainData.heightmapResolution = variables.midResolution;
                 mid2Terrains.gameObject.GetComponent<Terrain>().terrainData.size = new Vector3(variables.width, variables.midheight, variables.length);
+                
                 mid2Terrains.roughness = variables.roughness;
                 mid2Terrains.minHeight = variables.minHeight;
                 mid2Terrains.maxHeight = variables.maxHeight;

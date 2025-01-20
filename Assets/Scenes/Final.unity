@@ -18640,7 +18640,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1455498511
 RectTransform:
   m_ObjectHideFlags: 0
@@ -22405,6 +22405,7 @@ MonoBehaviour:
   FFT: {fileID: 2116093165}
   variables:
     resolution: 64
+    midResolution: 0
     width: 0
     length: 0
     midheight: 0
