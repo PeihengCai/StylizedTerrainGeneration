@@ -22,6 +22,8 @@ public class MidPointTerrain : MonoBehaviour
 
     public void GenerateNewTerrain()
     {
+        terrainComponent = Terrain.activeTerrain;
+        resolution = terrainComponent.terrainData.heightmapResolution;
         GenerateHeightmap();
     }
 

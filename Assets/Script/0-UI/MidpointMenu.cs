@@ -42,6 +42,10 @@ public class MidpointMenu : MonoBehaviour
 
         maxHeightSlider.value = maxHeight;
         minHeightSlider.value = minHeight;
+
+        menu.variables.width = 128;
+        menu.variables.length = 128;
+        menu.variables.midheight = 80;
     }
 
     void OnEnable()
@@ -61,13 +65,14 @@ public class MidpointMenu : MonoBehaviour
         //midpointTerrain.maxHeight = maxHeight;
         //maxHeightSlider.value = maxHeight;
         //minHeightSlider.value = minHeight;
-        menu.variables.width = 128;
-        menu.variables.length = 128;
-        menu.variables.height = 10;
         menu.variables.minHeight = minHeightSlider.value;
         menu.variables.maxHeight = maxHeightSlider.value;
         menu.variables.roughness = roughnessSlider.value;
         menu.variables.enableNormalization = normalizationToggle.isOn;
+
+        widthInput.text = menu.variables.width.ToString();
+        lengthInput.text = menu.variables.length.ToString();
+        heightInput.text = menu.variables.midheight.ToString();
     }
 
     public void UpdateWidth(string value)
