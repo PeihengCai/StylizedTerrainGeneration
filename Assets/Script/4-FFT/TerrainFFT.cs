@@ -90,7 +90,6 @@ public class TerrainFFT : MonoBehaviour
     {
         TerrainData terrainData = terrain.terrainData;
         terrainData.size = new UnityEngine.Vector3(terrainWidth, maxHeight, terrainWidth); 
-        Debug.Log(terrainData.size);
         terrain.terrainData.heightmapResolution = terrainWidth;
         terrain.terrainData.alphamapResolution = terrainWidth;
 
