@@ -5,4 +5,5 @@ This is a highly customizable Procedural Terrain Generation Tool with stylized s
 
 ## Team Members
 Peiheng Cai, MSc Virtual and Augmented Reality, Goldsmiths University of London
+
 Cuiyi Lin, MSc Virtual and Augmented Reality, Goldsmiths University of London
