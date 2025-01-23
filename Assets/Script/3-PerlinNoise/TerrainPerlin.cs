@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Diagnostics;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -43,6 +44,9 @@ public class TerrainPerlin : MonoBehaviour
 
     private void CreateNewTerrain(int width, int height)
     {
+        // Start Timer
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
         TerrainData terrainData = terrain.terrainData;
         terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
         terrain.terrainData.heightmapResolution = terrainWidth;
@@ -80,7 +84,9 @@ public class TerrainPerlin : MonoBehaviour
         terrainData.SetHeights(0, 0, heightMap);
         terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
 
-        //terrainData.size = new UnityEngine.Vector3(width, maxHeight, height); 
+        // Stop the timer
+        stopwatch.Stop(); 
+        UnityEngine.Debug.Log("Perlin Execution Time: "+stopwatch.ElapsedMilliseconds+" ms");
 
     }
 
@@ -148,18 +154,6 @@ public class PerlinNoise
     private static float Grad(int hash, float x, float y) 
     {
         // fake random gradient
-        // h = 0: x+y
-        // h = 1: -x+y
-        // h = 2: x-y
-        // h = 3: -x-y
-        /*int h = hash & 3;
-        float u = h < 2 ? x : y;
-        float v = h < 2 ? y : x;
-        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);*/
-        /*int h = hash & 7;
-        float u = h < 4 ? x : y;
-        float v = h < 4 ? y : x;
-        return (h & 1) == 0 ? u : -u + (h & 2) == 0 ? v : -v;*/
         int h = hash & 7;
 
         switch(h)
@@ -184,21 +178,8 @@ public class PerlinNoise
         return 0;
     }
 
-    private static float DotGrad(UnityEngine.Vector2 pos, UnityEngine.Vector2 grid)
-    {
-        UnityEngine.Vector2 gradient = RandomGrad(grid);
-        return UnityEngine.Vector2.Dot(gradient, pos-grid);
-    }
-
-    private static UnityEngine.Vector2 RandomGrad(UnityEngine.Vector2 pos)
-    {
-        float random = Mathf.Sin(666+pos.x*5678+pos.y*1234)*4321;
-        return new UnityEngine.Vector2(Mathf.Sin(random), Mathf.Cos(random));
-    }
-
     static PerlinNoise()
     {
-        Debug.Log("construct");
         CopyP();
     }
 

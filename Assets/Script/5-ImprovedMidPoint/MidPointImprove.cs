@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Diagnostics;
 
 public class MidPointImprove : MonoBehaviour
 {
@@ -15,11 +16,11 @@ public class MidPointImprove : MonoBehaviour
 
     private void Start()
     {
-        terrainComponent = Terrain.activeTerrain;
-        terrainData = terrainComponent.terrainData;
-        resolution = terrainData.heightmapResolution;
+        // terrainComponent = Terrain.activeTerrain;
+        // terrainData = terrainComponent.terrainData;
+        // resolution = terrainData.heightmapResolution;
         
-        GenerateHeightmap();
+        // GenerateHeightmap();
     }
 
     public void GenerateNewTerrain()
@@ -32,17 +33,25 @@ public class MidPointImprove : MonoBehaviour
 
     private void GenerateHeightmap()
     {
-        Debug.Log("Generating Heightmap...");
+        // Start Timer
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        //Debug.Log("Generating Heightmap...");
         heightMap = new float[resolution, resolution];
         InitializeCorners();
         DiamondSquare();
         FourSlidesPosition();
         if (enableNormalization == true)
         {
-            Debug.Log("Enable Normalization");
+            //Debug.Log("Enable Normalization");
             NormalizeHeightmap();
         }
         terrainComponent.terrainData.SetHeights(0, 0, heightMap);
+
+        // Stop the timer
+        stopwatch.Stop(); 
+        UnityEngine.Debug.Log("Improved Midpoint Execution Time: "+stopwatch.ElapsedMilliseconds+" ms");
+
     }
 
 
@@ -107,10 +116,10 @@ public class MidPointImprove : MonoBehaviour
         int thirdStep = Mathf.Max(1, halfStep / 3);
 
         //3 points from top left to bottom right & bottom left to top right
-        AddHeight(centerX - thirdStep, centerY - thirdStep, heightRange * 0.8f); //random range ratio at different points
-        AddHeight(centerX + thirdStep, centerY + thirdStep, heightRange * 0.6f);
-        AddHeight(centerX - thirdStep, centerY + thirdStep, heightRange * 0.8f);
-        AddHeight(centerX + thirdStep, centerY - thirdStep, heightRange * 0.6f);
+        AddHeight(centerX - thirdStep, centerY - thirdStep, heightRange * 0.4f); //random range ratio at different points
+        AddHeight(centerX + thirdStep, centerY + thirdStep, heightRange * 0.3f);
+        AddHeight(centerX - thirdStep, centerY + thirdStep, heightRange * 0.4f);
+        AddHeight(centerX + thirdStep, centerY - thirdStep, heightRange * 0.3f);
     }
 
     //add an auxiliary method for height displacement
@@ -166,7 +175,7 @@ public class MidPointImprove : MonoBehaviour
     /// </summary>
     private void NormalizeHeightmap()
     {
-        Debug.Log("Enable");
+        //Debug.Log("Enable");
         float min = float.MaxValue, max = float.MinValue;
 
         foreach (float value in heightMap)

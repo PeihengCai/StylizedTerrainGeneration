@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Diagnostics;
 
 public class MidPointTerrain : MonoBehaviour
 {
@@ -14,10 +15,10 @@ public class MidPointTerrain : MonoBehaviour
 
     private void Start()
     {
-        terrainComponent = Terrain.activeTerrain;
-        resolution = terrainComponent.terrainData.heightmapResolution;
+        // terrainComponent = Terrain.activeTerrain;
+        // resolution = terrainComponent.terrainData.heightmapResolution;
 
-        GenerateHeightmap();
+        // GenerateHeightmap();
     }
 
     public void GenerateNewTerrain()
@@ -29,16 +30,24 @@ public class MidPointTerrain : MonoBehaviour
 
     private void GenerateHeightmap()
     {
+        // Start Timer
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
         heightMap = new float[resolution, resolution];
         InitializeCorners();
         PerformDiamondSquare();
         FourSlidesPosition();
         if (enableNormalization == true)
         {
-            Debug.Log("Enable Normalization");
+            //Debug.Log("Enable Normalization");
             NormalizeHeightmap();
         }
         terrainComponent.terrainData.SetHeights(0, 0, heightMap);
+
+        // Stop the timer
+        stopwatch.Stop(); 
+        UnityEngine.Debug.Log("Midpoint Execution Time: "+stopwatch.ElapsedMilliseconds+" ms");
+
     }
 
     private void InitializeCorners()
@@ -121,7 +130,7 @@ public class MidPointTerrain : MonoBehaviour
     /// </summary>
     private void NormalizeHeightmap()
     {
-        Debug.Log("Enable");
+        //Debug.Log("Enable");
         float min = float.MaxValue, max = float.MinValue;
 
         foreach (float value in heightMap)

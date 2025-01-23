@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Diagnostics;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -26,6 +27,10 @@ public class TerrainFFT : MonoBehaviour
     [Tooltip("0: no filter; >0: low-pass; <0: high-pass")]
     public float filterR = 0; 
 
+    
+    private float maxNoiseHeight = float.MinValue;
+    private float minNoiseHeight = float.MaxValue;
+
     void Start()
     {
 
@@ -34,6 +39,9 @@ public class TerrainFFT : MonoBehaviour
     public void StartGenerate()
     {
         //OneDFFTTest();
+
+        // Start Timer
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         CreateNewTerrain(terrainWidth, terrainWidth);
         FastFourierTrans(terrainWidth, terrainWidth);
@@ -45,7 +53,19 @@ public class TerrainFFT : MonoBehaviour
             for (int y = 0; y < terrainWidth; y++)
             {
                 heightMap[x, y] = (float)complexMap[x, y].Magnitude;
-                //heightMap[x, y] = (float)complexMap[x, y].Real;
+
+                if (heightMap[x, y] > maxNoiseHeight) maxNoiseHeight = heightMap[x, y];
+                else if (heightMap[x, y] < minNoiseHeight) minNoiseHeight = heightMap[x, y];
+            }
+        }
+
+        // Normalization
+        for (int x = 0; x < terrainWidth; x++)
+        {
+            for (int y = 0; y < terrainWidth; y++)
+            {
+                heightMap[x, y] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, heightMap[x, y]);
+
                 if (x == 0 || y == 0) heightMap[x, y] = 0;
             }
         }
@@ -53,9 +73,12 @@ public class TerrainFFT : MonoBehaviour
         terrain.terrainData.SetHeights(0, 0, heightMap);
         terrain.terrainData.size = new UnityEngine.Vector3(terrainWidth, maxHeight, terrainWidth); 
         
+        // Stop the timer
+        stopwatch.Stop(); 
+        UnityEngine.Debug.Log("FFT Execution Time: "+stopwatch.ElapsedMilliseconds+" ms");
     }
 
-    private void OneDFFTTest()
+    /*private void OneDFFTTest()
     {
         int N = 8; // 信号长度
         double frequency = 1; // 正弦波的频率
@@ -84,7 +107,7 @@ public class TerrainFFT : MonoBehaviour
         {
             Debug.Log(result2[i]);
         }
-    }
+    }*/
 
     private void CreateNewTerrain(int width, int height)
     {
@@ -133,11 +156,6 @@ public class TerrainFFT : MonoBehaviour
         {
             for (int col = 0; col < width; col++)
             {
-                /***************************************/
-                /***************************************/
-                /******Change the imagine if wrong******/
-                /***************************************/
-                /***************************************/
                 complexMap[row, col] = new Complex(heightMap[row,col], 0);
             }
         }
